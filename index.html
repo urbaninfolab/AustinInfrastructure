@@ -2,13 +2,13 @@
 <html>
 	<head>
 		<meta charset="utf-8">
-		<title>Infrastructure Map - Austin Digital Twin</title> 
-		<meta name="description" content="Austin urban infrastructure map.">
+		<title>Fuel Stations Map--Austin Digital Twin</title>
+		<meta name="description" content="Austin Fuel Stations Map">
 		<meta name="viewport" content="width=device-width, initial-scale=1">
 
 		<!-- Open Graph tags for social media -->
-		<meta property="og:title" content="Infrastructure Map - Austin Digital Twin">
-		<meta property="og:description" content="Austin urban infrastructure map.">
+		<meta property="og:title" content="Fuel Stations Map--Austin Digital Twin">
+		<meta property="og:description" content="Austin Fuel Stations Map">
 		<meta property="og:image" content="https://img.itch.zone/aW1hZ2UvMTQ4MDY3NS85Mzc5NTEwLnBuZw==/original/IRJDeW.png">
 		<meta property="og:url" content="mobility.austindigitaltwin.com">
 
@@ -96,17 +96,15 @@
 
 		<!-- Leaflet.GridLayer.GoogleMutant -->
 		<script src="https://unpkg.com/leaflet.gridlayer.googlemutant@latest/dist/Leaflet.GoogleMutant.js"></script>
-
+		
+		<!-- Omnivore -->
+		<script src='https://api.tiles.mapbox.com/mapbox.js/plugins/leaflet-omnivore/v0.3.1/leaflet-omnivore.min.js'></script>
 	</head>
 
 <!--
-
 Check My Location button code leaflet
 
 <div class="geocoder-control leaflet-control"><div class="geocoder-control-input leaflet-bar" title="Check My Location" style="background-image: url(assets/images/location.png)"></div><div class="geocoder-control-suggestions leaflet-bar"><div class=""></div></div></div>
-
-
-
 -->
 
 	<style>
@@ -281,7 +279,8 @@ Check My Location button code leaflet
 		<!-- Fire Toggles -->
 
 
-			<h2 id="MapTitle" style="float: left; margin-right: 1rem; margin-top:3px; color: white;"><b><a style="color:white" href="#">Austin Infrastructure Map</a></b></h2>
+			<h2 id="MapTitle" style="float: left; margin-right: 1rem; margin-top:3px; color: white;"><b><a style="color:white"
+						href="#">Austin Fuel Stations Map</a></b></h2>
 			</div>
 								<!--
                                 <div id="get-help">
@@ -415,67 +414,78 @@ Check My Location button code leaflet
 					<span class="anchor">᠎⠀ ⠀᠎⠀ ⠀</span>
 					
 					<ul class="items">
-						<b><li style="display: none;">Fire Data</li></b>
-						<li style="display: none;"><input style="margin-left: 15px;" type="checkbox" class="active-fire" />  Inactive Fire </li>
-						<b><li style="display: none;">Smoke Data</li></b>
-						<li style="display: none;"><input style="margin-left: 15px;" type="checkbox" class="one-hour-smoke" />  1 Hour Forecast </li>
-						<li style="display: none;"><input style="margin-left: 15px;" type="checkbox" class="two-hour-smoke" />  2 Hour Forecast </li>
-						<li style="display: none;"><input style="margin-left: 15px;" type="checkbox" class="three-hour-smoke" />  3 Hour Forecast </li>
-						<b><li style="display: none;">Air Data</li></b>
-						<li style="display: none;"><input style="margin-left: 15px;" type="checkbox" class="purple-air" />  PurpleAir Data</li>
+						<!-- <b><li>Fire Data</li></b>
+																																																<li><input style="margin-left: 15px;" type="checkbox" class="active-fire" />  Inactive Fire </li>
+																																																<b><li>Smoke Data</li></b>
+																																																<li><input style="margin-left: 15px;" type="checkbox" class="one-hour-smoke" />  1 Hour Forecast </li>
+																																																<li><input style="margin-left: 15px;" type="checkbox" class="two-hour-smoke" />  2 Hour Forecast </li>
+																																																<li><input style="margin-left: 15px;" type="checkbox" class="three-hour-smoke" />  3 Hour Forecast </li>
+																																																<b><li>Air Data</li></b>
+																																																<li><input style="margin-left: 15px;" type="checkbox" class="purple-air" />  PurpleAir Data</li> -->
 						<!-- Microsoft seems to have pulled the rug on their air sensors -->
-						<li style="display: none;"><input style=" margin-left: 15px;" type="checkbox" class="microsoft-air" />  MSR Air Quality Sensors </li>
-						<b><li style="display: none;">Shapefile</li></b>
-						<li style="display: none;"><input style="margin-left: 15px;" type="radio" id="test-risk-radio" name="shapefile-radio" value="test-risk-radio"
-								 />
+						<!-- <li><input style=" margin-left: 15px;" type="checkbox" class="microsoft-air" /> MSR Air Quality Sensors </li>
+																																										<b>
+																																											<li>Shapefile</li>
+																																										</b>
+																																										<li><input style="margin-left: 15px;" type="radio" id="test-risk-radio" name="shapefile-radio"
+																																												value="test-risk-radio" />
 								<label for="test-risk-radio">Fire Risk</label>
 							</li>
-						<li style="display: none;"><input style="margin-left: 15px;" type="radio" id="afd-radio" name="shapefile-radio" value="afd-radio" />
+						<li><input style="margin-left: 15px;" type="radio" id="afd-radio" name="shapefile-radio" value="afd-radio" />
 								<label for="afd-radio">AFD Coverage</label>
 						</li>
-						<li style="display: none;"><input style="margin-left: 15px;"type="radio" id="hvi-radio" name="shapefile-radio" value="hvi-radio" />
+						<li><input style="margin-left: 15px;" type="radio" id="hvi-radio" name="shapefile-radio" value="hvi-radio" />
 							<label for="hvi-radio">HVI Map</label>
 						</li>
-						<li style="display: none;"><input style="margin-left: 15px;" type="radio" id="fire-risk-radio" name="shapefile-radio" value="fire-risk-radio" />
+						<li><input style="margin-left: 15px;" type="radio" id="fire-risk-radio" name="shapefile-radio"
+								value="fire-risk-radio" />
 							<label for="fire-risk-radio">Fire Vulnerability Map</label>
 						</li>
-						<li style="display: none;"><input style="margin-left: 15px;" type="radio" id="no-shapefile" name="shapefile-radio" value="none-radio" checked/>
+						<li><input style="margin-left: 15px;" type="radio" id="no-shapefile" name="shapefile-radio" value="none-radio"
+								checked />
 							<label for="none-radio">None</label>
 						</li>
 						<b><li>Points of Interest</li></b>
 						<li><input style="margin-left: 15px;" type="checkbox" class="firedept"  />  Fire Departments </li>
 						<li><input style="margin-left: 15px;" type="checkbox" class="policedept"  />  Police Departments </li>
 						<li><input style="margin-left: 15px;" type="checkbox" class="hospital"  />  Hospitals </li>
-						<b><li style="display: none;">Urban Mobility</li></b>
-						<li style="display: none;"><input style="margin-left: 15px;" type="checkbox" class="transit"  />  Transit Location</li>
-						<li style="display: none;"><input style="margin-left: 15px;" type="checkbox" class="micromobility"  />  Micromobility Location </li>
+						<b>
+							<li>Urban Mobility</li>
+						</b>
+						<li><input style="margin-left: 15px;" type="checkbox" class="transit" /> Transit Location</li>
+						<li><input style="margin-left: 15px;" type="checkbox" class="micromobility" /> Micromobility Location </li>
 						<b><li>Traffic Flow</li></b>
 						<li><input style="margin-left: 15px;" type="checkbox" class="traffic_condition"  />  Traffic Condition</li>
-						<b><li style="display: none;">Traffic Incident</li></b>
-						<li style="display: none;"><input style="margin-left: 15px;" type="checkbox" class="active_incident"  />  Active Traffic Incident </li>
-						<li style="display: none;"><input style="margin-left: 15px;" type="checkbox" class="archived_incident"  />  Archived (past 2 days) </li>
-						<li style="display: none;"><input style="margin-left: 15px;" type="checkbox" class="choropleth_incident"  />  Incident Choropleth </li>
-						<li style="display: none;"><input style="margin-left: 15px;" type="checkbox" class="road_incident"  />  Road Incident Count </li>
-						<b><li style="display: none;">Accessibility</li></b>
-						<li style="display: none;"><input style="margin-left: 15px;" type="checkbox" class="walk_score"  />  Walk Score </li>
-						<li style="display: none;"><input style="margin-left: 15px;" type="checkbox" class="bike_score"  />  Bike Score </li>
-						<li style="display: none;"><input style="margin-left: 15px;" type="checkbox" class="transit_score"  />  Transit Score </li>
+						<b>
+							<li>Traffic Incident</li>
+						</b>
+						<li><input style="margin-left: 15px;" type="checkbox" class="active_incident" /> Active Traffic Incident </li>
+						<li><input style="margin-left: 15px;" type="checkbox" class="archived_incident" /> Archived (past 2 days) </li>
+						<li><input style="margin-left: 15px;" type="checkbox" class="choropleth_incident" /> Incident
+							Choropleth </li>
+						<li><input style="margin-left: 15px;" type="checkbox" class="road_incident" /> Road Incident Count </li>
+						<b>
+							<li>Accessibility</li>
+						</b>
+						<li><input style="margin-left: 15px;" type="checkbox" class="walk_score" /> Walk Score </li>
+						<li><input style="margin-left: 15px;" type="checkbox" class="bike_score" /> Bike Score </li>
+						<li><input style="margin-left: 15px;" type="checkbox" class="transit_score" /> Transit Score </li> -->
 
 						<b><li>Fuel Stations</li></b>
 						<li><input style="margin-left: 15px;" type="checkbox" class="gasoline"  />  Gasoline </li>
 						<li><input style="margin-left: 15px;" type="checkbox" class="electric_charging"  />  Electric Charging </li>
-						<li><input style="margin-left: 15px;" type="checkbox" class="fuel_other"  />  Other </li>
+						<li><input style="margin-left: 15px;" type="checkbox" class="other_fuel" /> Other </li>
 
-						<b><li>Water Facilities </li></b>
+						<!-- <b><li>Water Facilities </li></b>
 						<li><input style="margin-left: 15px;" type="checkbox" class="storm_water"  />  Storm Water Pipe </li>
 						<li><input style="margin-left: 15px;" type="checkbox" class="pump_station"  />  Water Pump Station </li>
 						<li><input style="margin-left: 15px;" type="checkbox" class="water_treatment"  />  Water Treatment Plant </li>
-						<li><input style="margin-left: 15px;" type="checkbox" class="wastewater_treatment"  />  Wastewater Treatment Plant </li>
+						<li><input style="margin-left: 15px;" type="checkbox" class="wastewater_treatment" /> Wastewater Treatment Plant </li>
+						-->
 
-						<b><li>Cell Tower </li></b>
+						<!-- <b><li>Cell Tower </li></b>
 						<li><input style="margin-left: 15px;" type="checkbox" class="cell_tower"  />  Cell Tower </li>
-						<li><input style="margin-left: 15px;" type="checkbox" class="signal_coverage"  />  Signal Coverage </li>
-
+						<li><input style="margin-left: 15px;" type="checkbox" class="signal_coverage" /> Signal Coverage </li> -->
 					</ul>
 				</div>
 
@@ -835,7 +845,7 @@ Check My Location button code leaflet
 		rel="stylesheet"
 		href="assets/css/fireMap.css"
 		/>
-		<script src="assets/js/mobilityMap2D.js"></script>
+		<script src="./assets/js/fuelStationsMap.js"></script>
 
 		<!-- Google Map Layers -->
 		<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB0IIh7KXVmItoyyPktQpcgAzmbflbWR4s" async defer></script>
