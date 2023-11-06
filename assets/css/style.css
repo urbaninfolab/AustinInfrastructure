@@ -566,3 +566,10 @@ h5 {
 .marker-cluster-darkorange div {
 	background-color: rgba(255, 161, 0, 0.6);
 	}
+
+.marker-cluster-darkblue {
+	background-color: rgba(78, 119, 255, 0.6);
+	}
+.marker-cluster-darkblue div {
+	background-color: rgba(64, 47, 212, 0.6);
+	}

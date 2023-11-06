@@ -11,6 +11,9 @@ var microsoftAirMonitors = new L.FeatureGroup();
 let transitLocations = new L.FeatureGroup();
 let scooterLocations = new L.FeatureGroup();
 let incidentLocations = new L.FeatureGroup();
+//-------- add cell tower
+let cellTowerLocations = new L.FeatureGroup();
+
 var currentShapefile = null;
 var markers = L.markerClusterGroup({
     showCoverageOnHover: false,
@@ -58,6 +61,17 @@ var scooter_markers = L.markerClusterGroup({
     }
 });
 
+// --------- add cell tower
+var celltower_markers = L.markerClusterGroup({
+    showCoverageOnHover: false,
+    //zoomToBoundsOnClick: false,
+    iconCreateFunction: function(cluster) {
+        var childCount = cluster.getChildCount();
+        var markers = cluster.getAllChildMarkers();
+        return new L.DivIcon({ html: '<div><span><b>' + childCount + '</b></span></div>', className: 'marker-cluster marker-cluster-darkblue', iconSize: new L.Point(40, 40) });
+    }
+});
+
 var archived_incident_markers = L.markerClusterGroup({
     showCoverageOnHover: false,
     //zoomToBoundsOnClick: false,
@@ -92,6 +106,21 @@ function new_scooter_cluster_layer() {
     });
     return cluster_layer
 };
+
+// --------- add cell tower
+function new_celltower_cluster_layer() {
+    let cluster_layer = L.markerClusterGroup({
+        showCoverageOnHover: false,
+        //zoomToBoundsOnClick: false,
+        iconCreateFunction: function(cluster) {
+            var childCount = cluster.getChildCount();
+            var markers = cluster.getAllChildMarkers();
+            return new L.DivIcon({ html: '<div><span><b>' + childCount + '</b></span></div>', className: 'marker-cluster marker-cluster-darkblue', iconSize: new L.Point(40, 40) });
+        }
+    });
+    return cluster_layer
+};
+
 function new_archived_incident_cluster_layer() {
     let cluster_layer = L.markerClusterGroup({
         showCoverageOnHover: false,
@@ -1914,6 +1943,58 @@ function new_archived_incident_cluster_layer() {
         }
     }
 
+    // -------------- add cell tower
+    function buildCellTowerMap() {
+        for (let i = 0; i < cellTowerLocations.length; i++) {
+            cellTowerLocations[i].remove();
+        }
+        if (!document.querySelector(".cell_tower").checked) {
+            return
+        }
+
+        let cell_tower = document.querySelector(".cell_tower").checked;
+
+        // cell tower JSON data
+        if (cell_tower) {
+            celltower_markers = new_celltower_cluster_layer();
+            // UTILITIESCOMMUNICATION_cell_tower
+            fetch('https://data.austintexas.gov/resource/8sad-agwz.json')
+              .then(response => {
+                // Check if the response is ok (status code in the range 200-299)
+                if (!response.ok) {
+                  throw new Error('Network response was not ok');
+                }
+                return response.json(); // Parse the response body as JSON
+              })
+              .then(celltower_json => {
+                console.log(celltower_json);
+                console.log(celltower_json[0]['the_geom']['coordinates'][1]);
+
+                for (let i=0; i<celltower_json.length; i++){
+                    let y = celltower_json[i]['the_geom']['coordinates'][1];
+                    let x = celltower_json[i]['the_geom']['coordinates'][0];
+                    let celltower_marker = new L.marker([y,x]);
+                    let iconLink = "assets/images/celltower_icon.png";
+                    celltower_marker.setIcon(L.icon({
+                        iconUrl: iconLink,
+                        iconSize: [24,32],
+                        iconAnchor: [12, 32],
+                        popupAnchor: [0, -30]
+                    }));
+                    var tower_id = celltower_json[i]['cell_tower_id'];
+                    var tower_loc = celltower_json[i]['cell_tower_location'];
+                    celltower_marker.bindPopup(" ID: " + tower_id + ", Location: " + tower_loc);
+                    celltower_markers.addLayer(celltower_marker);
+                    cellTowerLocations.addLayer(celltower_marker);
+                }
+            })
+            .catch(error => {
+                console.log('Error:', error);
+            });
+            map.addLayer(celltower_markers)
+        }
+    }
+
     let current_incident_shapefile = null
     function buildIncidentChoropleth() {
         if (current_incident_shapefile != null){
@@ -2217,6 +2298,13 @@ function new_archived_incident_cluster_layer() {
             console.log("micromobility click")
             map.removeLayer(scooter_markers)
             buildScooterMap();
+        });
+
+        //------------ add cell tower
+        document.querySelector(".cell_tower").addEventListener('click', function () {
+            console.log('cell_tower click')
+            map.removeLayer(celltower_markers)
+            buildCellTowerMap();
         });
 
         document.querySelector(".active_incident").addEventListener('click', function () {
