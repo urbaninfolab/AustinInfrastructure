@@ -2592,18 +2592,39 @@ function buildAltFuelMap(checked) {
 	}
 } */
 
-const CSV_ALT_FUEL = './data/alt_fuel_stations (Oct 30 2023).csv'
+const CSV_ALT_FUEL = './data/alt_fuel_stations.csv'
 
 // custom layer for filtering and binding popup
 const ELEC_CHARGING_CUSTOM_LAYER = new L.geoJson(null, {
 	filter: (feature, layer) => {
-		return (
-			feature.properties['State'] == 'TX' &&
-			feature.properties['City'] == 'Austin' &&
-			feature.properties['Fuel Type Code'] == 'ELEC'
-		)
+		/* 
+		feature.properties['State'] == 'TX' &&
+		feature.properties['City'] == 'Austin' &&
+		 */
+		return feature.properties['Fuel Type Code'] == 'ELEC'
 	},
-	pointToLayer: AltFuelStationPointToLayer,
+	pointToLayer: (feature, latlng) => {
+		return new L.circleMarker(latlng, {
+			radius: 8,
+			fillColor: feature.properties['Station Name'].includes(
+				'Supercharger'
+			)
+				? '#FF6649'
+				: '#2DB262',
+			color: 'grey',
+			weight: 1,
+			fillOpacity: feature.properties['Status Code'] == 'E' ? 1 : 0.3,
+		}).bindPopup(() => {
+			return getAltFuelStationPopupContent(feature.properties)
+			;`
+				${getAltFuelStationPopupContent(feature.properties)}
+				<img src="${getGooglePlacesResults(
+					['photos'],
+					`Charging Station at ${feature.properties['Street Address']}`
+				)[0].photos[0].getUrl()}" alt="Image corrupted"/>
+			`
+		})
+	},
 })
 let elecChargingLayer = null
 
@@ -2625,13 +2646,21 @@ function onElecChargingClick(checked) {
 // custom layer for filtering and binding popup
 const OTHER_FUEL_CUSTOM_LAYER = new L.geoJson(null, {
 	filter: (feature, layer) => {
-		return (
-			feature.properties['State'] == 'TX' &&
-			feature.properties['City'] == 'Austin' &&
-			feature.properties['Fuel Type Code'] != 'ELEC'
-		)
+		/* 
+		feature.properties['State'] == 'TX' &&
+		feature.properties['City'] == 'Austin' &&
+		 */
+		return feature.properties['Fuel Type Code'] != 'ELEC'
 	},
-	pointToLayer: AltFuelStationPointToLayer,
+	pointToLayer: (feature, latlng) => {
+		return new L.circleMarker(latlng, {
+			radius: 8,
+			fillColor: FUEL_CODE_TO_COLOR[feature.properties['Fuel Type Code']],
+			color: 'grey',
+			weight: 1,
+			fillOpacity: feature.properties['Status Code'] == 'E' ? 1 : 0.3,
+		}).bindPopup(getAltFuelStationPopupContent(feature.properties))
+	},
 })
 let otherFuelLayer = null
 
@@ -2651,7 +2680,6 @@ function onOtherFuelClick(checked) {
 }
 
 const FUEL_CODE_TO_COLOR = {
-	ELEC: '#2DB262',
 	E85: '#CCC876',
 	LPG: '#9B8BCC',
 	BD: '#B53352',
@@ -2660,16 +2688,6 @@ const FUEL_CODE_TO_COLOR = {
 	LNG: '#134427',
 	HY: '#A2D5E0',
 }
-
-function AltFuelStationPointToLayer(feature, latlng) {
-	return new L.circleMarker(latlng, {
-		fillColor: FUEL_CODE_TO_COLOR[feature.properties['Fuel Type Code']],
-		color: 'grey',
-		weight: 0.8,
-		fillOpacity: feature.properties['Status Code'] == 'E' ? 1 : 0.3,
-	}).bindPopup(getAltFuelStationPopupContent(feature))
-}
-
 const FUEL_CODE_TO_TYPE = {
 	E85: 'Ethanol',
 	LPG: 'Propane',
@@ -2681,54 +2699,49 @@ const FUEL_CODE_TO_TYPE = {
 }
 
 /**
- * @param {JSON} feature station data associated with a single marker
+ * @param {JSON} featProps station data associated with a single marker
  * @returns popup content including station access, name, address, etc.
  *
  * @author Kay Kong <lykong@utexas.edu>
  */
-function getAltFuelStationPopupContent(feature) {
+function getAltFuelStationPopupContent(featProps) {
 	let popupContent = '<div class="basic-info">'
 
-	if (feature.properties['Fuel Type Code'] != 'ELEC')
+	if (featProps['Fuel Type Code'] != 'ELEC')
 		popupContent = `
 			${popupContent}
-			<span>Fuel Type: ${
-				FUEL_CODE_TO_TYPE[feature.properties['Fuel Type Code']]
-			}</span><br>
+			<span>Fuel Type: ${FUEL_CODE_TO_TYPE[featProps['Fuel Type Code']]}</span><br>
 		`
 
-	if (
-		feature.properties['Status Code'] == 'P' &&
-		feature.properties['Expected Date']
-	)
+	if (featProps['Status Code'] == 'P' && featProps['Expected Date'])
 		popupContent = `
 			${popupContent}
-			<span>Expected Date: ${feature.properties['Expected Date']}</span><br>
+			<span>Expected Date: ${featProps['Expected Date']}</span><br>
 		`
 
 	popupContent = `
 		${popupContent}
-		<span>Name: ${feature.properties['Station Name']}</span><br>
-		<span>Access: ${feature.properties['Access Code'].replace('p', 'P')}</span><br>
-		<span>Address: ${feature.properties['Street Address']}</span><br>
-		<span>ZIP Code: ${feature.properties['ZIP']}</span>
+		<span>Name: ${featProps['Station Name']}</span><br>
+		<span>Access: ${featProps['Access Code']}</span><br>
+		<span>Address: ${featProps['Street Address']}, ${featProps['City']}</span><br>
+		<span>ZIP Code: ${featProps['ZIP']}</span>
 	`
 
-	if (feature.properties['Station Phone'])
+	if (featProps['Station Phone'])
 		popupContent = `
 			${popupContent}<br>
-			<span>Phone: ${feature.properties['Station Phone']}</span>
+			<span>Phone: ${featProps['Station Phone']}</span>
 		`
-	if (feature.properties['EV Network'])
+	if (featProps['EV Network'])
 		popupContent = `
 			${popupContent}<br>
-			<span>Network: ${feature.properties['EV Network']}</span>
+			<span>Network: ${featProps['EV Network']}</span>
 		`
 
-	if (feature.properties['EV Connector Types'])
+	if (featProps['EV Connector Types'])
 		popupContent = `
 			${popupContent}<br>
-			<span>Connector Type: ${feature.properties['EV Connector Types']}</span>
+			<span>Connector Type: ${featProps['EV Connector Types']}</span>
 		`
 
 	return `
@@ -2741,6 +2754,49 @@ function getAltFuelStationPopupContent(feature) {
 			<span>Incident Count (2017-2023): ${feature.properties["Status\ Code"]} </span><BR>
 		</div>
 	*/
+}
+
+let service
+
+function initMap() {
+	service = new google.maps.places.PlacesService(
+		document.createElement('div')
+	)
+}
+
+/* 
+async function initMap() {
+	const { PlacesService } = google.maps.importLibrary('places')
+	console.log(PlacesService)
+	SERVICE = new PlacesService(document.createElement('div'))
+}
+
+initMap() */
+
+// const GOOGLE_PLACES = new google.maps.places.PlacesService(map)
+
+function getGooglePlacesResults(fields, input) {
+	service.findPlaceFromQuery(input, fields)
+	/* return fetch(
+		`https://maps.googleapis.com/maps/api/place/findplacefromtext/json
+			?fields=${fields.join('%2C')}
+			&input=${input}
+			&inputtype=textquery
+			&key=AIzaSyCFUyKIf9tHciEaINV7vZ1iobBsP_cR6Zs
+		`,
+		{ mode: 'no-cors' }
+	)
+		.then((res) => {
+			if (!res.ok) throw new Error(res.status)
+			return res.json()
+		})
+		.then((json) => {
+			if (json.status != 'OK') throw new Error(json.status)
+			if (json.candidates.length == 0)
+				throw new Error('No Candidates from Google Places API')
+			return json.candidates
+		})
+		.catch((err) => console.log(err)) */
 }
 
 function buildDropdownMenu(map) {
