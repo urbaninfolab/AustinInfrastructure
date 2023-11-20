@@ -83,6 +83,10 @@
 		<link rel="preload" href="https://smartcity.tacc.utexas.edu/FireIncident/assets/fonts/ManifoldDSA/ManifoldDSA-ExtraBold.woff" as="font" type="font/woff" crossorigin>
 		<link rel="preload" href="https://smartcity.tacc.utexas.edu/FireIncident/assets/fonts/FontAwesome/fa-solid-900.woff" as="font" type="font/woff" crossorigin>
 
+		<!-- HERE API -->
+		<script type="text/javascript" src="https://js.api.here.com/v3/3.1/mapsjs-core.js"></script>
+		<script type="text/javascript" src="https://js.api.here.com/v3/3.1/mapsjs-service.js"></script>
+		<script type="text/javascript" src="https://js.api.here.com/v3/3.1/mapsjs-mapevents.js"></script>
 
 		<!-- Global site tag (gtag.js) - Google Analytics -->
 		<script async src="https://www.googletagmanager.com/gtag/js?id=G-LXDZCKSKZQ"></script>
@@ -474,8 +478,9 @@ Check My Location button code leaflet
 
 						<b><li>Cell Tower </li></b>
 						<li><input style="margin-left: 15px;" type="checkbox" class="cell_tower"  />  Cell Tower </li>
-						<li><input style="margin-left: 15px;" type="checkbox" class="signal_coverage"  />  Signal Coverage </li>
-
+						<li><input style="margin-left: 15px;" type="checkbox" class="activated_5g_sites"  />  Activated 5G Sites </li>
+						<li><input style="margin-left: 15px;" type="checkbox" class="signal_coverage_att"  />  Signal Coverage (AT&T) </li>
+						<li><input style="margin-left: 15px;" type="checkbox" class="signal_coverage_verizon"  />  Signal Coverage (Verizon) </li>
 					</ul>
 				</div>
 
