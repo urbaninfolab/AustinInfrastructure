@@ -13,6 +13,8 @@ let scooterLocations = new L.FeatureGroup();
 let incidentLocations = new L.FeatureGroup();
 //-------- add cell tower
 let cellTowerLocations = new L.FeatureGroup();
+//-------- add 5g sites
+let activated5gLocations = new L.FeatureGroup();
 
 var currentShapefile = null;
 var markers = L.markerClusterGroup({
@@ -1995,6 +1997,180 @@ function new_archived_incident_cluster_layer() {
         }
     }
 
+    //---------- add 5g sites (Using HERE API do geocoding)
+    var platform = new H.service.Platform({
+        'apikey': 'hRKPR0_8i7-Xnu5mZvW_4t4nqFDd3cnYuR2fpBCbIEo'
+    });
+    // Get an instance of the geocoding service:
+    var service = platform.getSearchService();
+
+    var activated5g_markers = L.markerClusterGroup({
+        showCoverageOnHover: false,
+        //zoomToBoundsOnClick: false,
+        iconCreateFunction: function(cluster) {
+            var childCount = cluster.getChildCount();
+            var markers = cluster.getAllChildMarkers();
+            return new L.DivIcon({ html: '<div><span><b>' + childCount + '</b></span></div>', className: 'marker-cluster marker-cluster-darkyellow', iconSize: new L.Point(40, 40) });
+        }
+    });
+
+    function build5GSitesMap() {
+        for (let i = 0; i < activated5gLocations.length; i++) {
+            activated5gLocations[i].remove();
+        }
+        if (!document.querySelector(".activated_5g_sites").checked) {
+            return
+        }
+
+        let sites_5g = document.querySelector(".activated_5g_sites").checked;
+
+        if (sites_5g) {
+            fetch('https://data.austintexas.gov/resource/ubw7-icq8.json')
+              .then(response => {
+                // Check if the response is ok (status code in the range 200-299)
+                if (!response.ok) {
+                  throw new Error('Network response was not ok');
+                }
+                return response.json(); // Parse the response body as JSON
+              })
+              .then(activated5g_json => {
+                console.log(activated5g_json);
+                for (let i=0; i<activated5g_json.length; i++){
+                    query = activated5g_json[i]["node_address"]
+                    service.geocode({
+                        q: query
+                    }, (result) => {
+                    console.log(result.items[0]["address"])
+                    let addr = result.items[0]["address"]["label"]
+                    let y = result.items[0]["position"]["lat"];
+                    let x = result.items[0]["position"]["lng"];
+                    let activated5g_maker = new L.marker([y,x]);
+                    let iconLink = "assets/images/5g_icon.png"; //change later
+                    activated5g_maker.setIcon(L.icon({
+                        iconUrl: iconLink,
+                        iconSize: [32,40],
+                        iconAnchor: [12, 32],
+                        popupAnchor: [0, -30]
+                    }));
+                    activated5g_maker.bindPopup("5G Location: " + addr);
+                    activated5g_markers.addLayer(activated5g_maker);
+                    activated5gLocations.addLayer(activated5g_maker);
+                    }, alert);
+                }
+            })
+            .catch(error => {
+                console.log('Error:', error);
+            });
+            map.addLayer(activated5g_markers)
+        }   
+    }
+
+    //----------- add signal coverage
+    let current_singalatt_layer = null
+    function buildSignalCoverageATTMap() {
+        selector = ".signal_coverage_att";
+        geojson_path = "data/ATT_austin.geojson";
+        color = "#80c4b7";
+
+        if (current_singalatt_layer != null){
+            map.removeLayer(current_singalatt_layer)
+            current_singalatt_layer = null
+        }
+        if (!document.querySelector(selector).checked){
+            return
+        }
+
+        // let geojson_path = 'data/ATT_austin.geojson'
+        let popupContent = ``;
+
+        fetch(geojson_path)
+              .then(response => {
+                // Check if the response is ok (status code in the range 200-299)
+                if (!response.ok) {
+                  throw new Error('Network response was not ok');
+                }
+                return response.json(); // Parse the response body as JSON
+              })
+              .then(coverage_json => {
+                console.log('in')
+                console.log(coverage_json);
+
+                let signal_layer = new L.geoJSON(coverage_json, {
+                    onEachFeature: function(feature, layer){
+                        popupContent = `
+                        <div class="basic-info">
+                            <span>Neighborhood: ${feature.properties["neighname"]}</span><BR>
+                            <span>Land Area: ${feature.properties["shape_area"]} m&sup2 </span><BR>
+                        </div>
+                        `;
+                        layer.bindPopup(popupContent);
+                        layer.options.color = color;
+                        layer.options.weight = 1.0;
+                        layer.options.fillOpacity = 0.65;
+                    }
+                })
+
+                signal_layer.addTo(map);
+                current_singalatt_layer = signal_layer;
+            })
+            .catch(error => {
+                console.log('Error:', error);
+            });
+
+    }
+
+    let current_singalverizon_layer = null
+    function buildSignalCoverageVerizonMap() {
+        selector = ".signal_coverage_verizon";
+        geojson_path = "data/verizon_austin.geojson";
+        color = "#e3856b ";
+
+        if (current_singalverizon_layer != null){
+            map.removeLayer(current_singalverizon_layer)
+            current_singalverizon_layer = null
+        }
+        if (!document.querySelector(selector).checked){
+            return
+        }
+        let popupContent = ``;
+
+        fetch(geojson_path)
+              .then(response => {
+                // Check if the response is ok (status code in the range 200-299)
+                if (!response.ok) {
+                  throw new Error('Network response was not ok');
+                }
+                return response.json(); // Parse the response body as JSON
+              })
+              .then(coverage_json => {
+                console.log('in')
+                console.log(coverage_json);
+
+                let signal_layer = new L.geoJSON(coverage_json, {
+                    onEachFeature: function(feature, layer){
+                        popupContent = `
+                        <div class="basic-info">
+                            <span>Neighborhood: ${feature.properties["neighname"]}</span><BR>
+                            <span>Land Area: ${feature.properties["shape_area"]} m&sup2 </span><BR>
+                        </div>
+                        `;
+                        layer.bindPopup(popupContent);
+                        layer.options.color = color;
+                        layer.options.weight = 1.0;
+                        layer.options.fillOpacity = 0.65;
+                    }
+                })
+
+                signal_layer.addTo(map);
+                current_singalverizon_layer = signal_layer;
+            })
+            .catch(error => {
+                console.log('Error:', error);
+            });
+
+    }
+
+
     let current_incident_shapefile = null
     function buildIncidentChoropleth() {
         if (current_incident_shapefile != null){
@@ -2306,6 +2482,23 @@ function new_archived_incident_cluster_layer() {
             map.removeLayer(celltower_markers)
             buildCellTowerMap();
         });
+        //---------- add 5g sites
+        document.querySelector(".activated_5g_sites").addEventListener('click', function(){
+            console.log('activated_5g_sites click')
+            map.removeLayer(activated5g_markers)
+            build5GSitesMap();
+        })
+
+        //---------- add signal coverage
+        document.querySelector('.signal_coverage_att').addEventListener('click',function() {
+            console.log('signal_coverage_att click')
+            buildSignalCoverageATTMap();
+        })
+        //---------- add signal coverage
+        document.querySelector('.signal_coverage_verizon').addEventListener('click',function() {
+            console.log('signal_coverage_verizon click')
+            buildSignalCoverageVerizonMap();
+        })
 
         document.querySelector(".active_incident").addEventListener('click', function () {
             buildLiveIncidentMap();
