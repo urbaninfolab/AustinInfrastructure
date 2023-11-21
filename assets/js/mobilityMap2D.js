@@ -15,6 +15,8 @@ let incidentLocations = new L.FeatureGroup();
 let cellTowerLocations = new L.FeatureGroup();
 //-------- add 5g sites
 let activated5gLocations = new L.FeatureGroup();
+//-------- add small scale green
+let smallGreenLocations = new L.FeatureGroup();
 
 var currentShapefile = null;
 var markers = L.markerClusterGroup({
@@ -2004,15 +2006,20 @@ function new_archived_incident_cluster_layer() {
     // Get an instance of the geocoding service:
     var service = platform.getSearchService();
 
-    var activated5g_markers = L.markerClusterGroup({
-        showCoverageOnHover: false,
-        //zoomToBoundsOnClick: false,
-        iconCreateFunction: function(cluster) {
-            var childCount = cluster.getChildCount();
-            var markers = cluster.getAllChildMarkers();
-            return new L.DivIcon({ html: '<div><span><b>' + childCount + '</b></span></div>', className: 'marker-cluster marker-cluster-darkyellow', iconSize: new L.Point(40, 40) });
-        }
-    });
+    function new_activated5g_cluster_layer() {
+        let cluster_layer = L.markerClusterGroup({
+            showCoverageOnHover: false,
+            //zoomToBoundsOnClick: false,
+            iconCreateFunction: function(cluster) {
+                var childCount = cluster.getChildCount();
+                var markers = cluster.getAllChildMarkers();
+                return new L.DivIcon({ html: '<div><span><b>' + childCount + '</b></span></div>', className: 'marker-cluster marker-cluster-darkyellow', iconSize: new L.Point(40, 40) });
+            }
+        });
+        return cluster_layer
+    };
+
+    var activated5g_markers = new_activated5g_cluster_layer()
 
     function build5GSitesMap() {
         for (let i = 0; i < activated5gLocations.length; i++) {
@@ -2021,10 +2028,10 @@ function new_archived_incident_cluster_layer() {
         if (!document.querySelector(".activated_5g_sites").checked) {
             return
         }
-
         let sites_5g = document.querySelector(".activated_5g_sites").checked;
 
         if (sites_5g) {
+            activated5g_markers = new_activated5g_cluster_layer()
             fetch('https://data.austintexas.gov/resource/ubw7-icq8.json')
               .then(response => {
                 // Check if the response is ok (status code in the range 200-299)
@@ -2170,6 +2177,59 @@ function new_archived_incident_cluster_layer() {
 
     }
 
+    //------------add small scale green
+
+    function smallGreenMarker(latlng, type){ 
+        let colorDict = {"Rain Garden":"rgb(20, 112, 29)", "Green Roof":"rgb(48,208,146)", "Vegetated Filter Strip":"rgb(184, 208, 32)",
+                        "Rain Barrel / Cistern":"rgb(48,30,184)", "Rain Barrel":"rgb(48,30,184)", "Porous Pavement":"rgb(45, 10, 6)"}
+        let smallGreenMarkerOptions = {
+            radius: 6,
+            fillColor: colorDict[type],
+            color: "#000",
+            weight: 1,
+            opacity: 0.8,
+            fillOpacity: 0.6
+        }
+        marker = new L.circleMarker(latlng, smallGreenMarkerOptions)
+        return marker
+    };
+    
+    var smallgreen_markers = []
+
+    function buildSmallScaleGreenMap() {
+        for (let i=0; i<smallgreen_markers.length; i++) {
+            smallgreen_markers[i].remove();
+        }
+
+        let small_green = document.querySelector(".samll_scale_green").checked
+        
+        //small green json data
+        if (small_green) {
+            fetch("https://data.austintexas.gov/resource/2cgz-29c8.json")
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok')
+                }
+                return response.json();
+            })
+            .then(smallgreen_json => {
+                console.log(smallgreen_json)
+                
+                for (let i=0; i<smallgreen_json.length; i++){
+                    let y=smallgreen_json[i]["location"]["latitude"]
+                    let x=smallgreen_json[i]["location"]["longitude"]
+                    var smallgreen_type = smallgreen_json[i]["type_of_green_infrastructure"]
+                    var smallgreen_zip = smallgreen_json[i]["zip"]
+                    let smallgreen_maker = smallGreenMarker([y,x], smallgreen_type).addTo(map);
+                    smallgreen_maker.bindPopup(" Type of Green Infra: " + smallgreen_type + ", Zipcode: " + smallgreen_zip);
+                    smallgreen_markers.push(smallgreen_maker);
+                }
+            })
+            .catch(error => {
+                console.log("Error:", error);
+            });
+        }
+    }
 
     let current_incident_shapefile = null
     function buildIncidentChoropleth() {
@@ -2498,6 +2558,11 @@ function new_archived_incident_cluster_layer() {
         document.querySelector('.signal_coverage_verizon').addEventListener('click',function() {
             console.log('signal_coverage_verizon click')
             buildSignalCoverageVerizonMap();
+        })
+        //---------- add small scale green
+        document.querySelector(".samll_scale_green").addEventListener('click', function() {
+            console.log("samll_scale_green click")
+            buildSmallScaleGreenMap();
         })
 
         document.querySelector(".active_incident").addEventListener('click', function () {
