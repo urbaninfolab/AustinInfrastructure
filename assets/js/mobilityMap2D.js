@@ -2231,6 +2231,50 @@ function new_archived_incident_cluster_layer() {
         }
     }
 
+    //---------- add parkland
+    let current_parkland_layer = null
+    function buildParklandMap() {
+        if (current_parkland_layer != null){
+            map.removeLayer(current_parkland_layer)
+            current_parkland_layer = null
+        }
+        if (!document.querySelector(".parkland").checked){
+            return
+        }
+        let popupContent = ``;
+
+        fetch("https://data.austintexas.gov/resource/v8hw-gz65.geojson")
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok')
+            }
+            return response.json();
+        })
+        .then(parkland_json => {
+            console.log(parkland_json);
+            let parkland_layer = new L.geoJson(parkland_json, {
+                onEachFeature: function(feature, layer){
+                    popupContent = `
+                        <div class="basic-info">
+                            <span>Address: ${feature.properties["address"]}</span><BR>
+                            <span>Land Area: ${feature.properties["shape_area"]} m&sup2 </span><BR>
+                        </div>
+                        `;
+                    layer.bindPopup(popupContent);
+                    layer.options.color = "#000";
+                    layer.options.weight = 1.0;
+                    layer.options.fillOpacity = 0.65;
+                    layer.options.fillColor = "rgb(119, 210, 124)";
+                }
+            })
+            parkland_layer.addTo(map);
+            current_parkland_layer = parkland_layer;
+        })
+        .catch(error => {
+            console.log("Error:",error);
+        });
+    }
+
     let current_incident_shapefile = null
     function buildIncidentChoropleth() {
         if (current_incident_shapefile != null){
@@ -2563,6 +2607,11 @@ function new_archived_incident_cluster_layer() {
         document.querySelector(".samll_scale_green").addEventListener('click', function() {
             console.log("samll_scale_green click")
             buildSmallScaleGreenMap();
+        })
+        //---------- add parkland
+        document.querySelector(".parkland").addEventListener('click', function() {
+            console.log("parkland click")
+            buildParklandMap();
         })
 
         document.querySelector(".active_incident").addEventListener('click', function () {
