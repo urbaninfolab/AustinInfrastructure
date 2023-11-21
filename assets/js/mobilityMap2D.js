@@ -2230,6 +2230,69 @@ function new_archived_incident_cluster_layer() {
             });
         }
     }
+    //---------- add public tree
+    function publicTreeMarker(latlng, diameter){ 
+        let smallGreenMarkerOptions = {
+            radius: 0.25*diameter,
+            fillColor: "green",
+            color: "#000",
+            weight: 1,
+            opacity: 0.8,
+            fillOpacity: 0.6
+        }
+        let marker = new L.circleMarker(latlng, smallGreenMarkerOptions)
+        return marker
+    };
+    
+    var publictree_markers = []
+    function buildPublicTreeMap() {
+        for (let i=0; i<publictree_markers.length; i++){
+            publictree_markers[i].remove()
+        }
+        let public_tree = document.querySelector(".public_tree").checked
+
+        treeData = "data/Tree_Inventory.csv"
+        if (public_tree) {
+            fetch(treeData)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.text();
+            })
+            .then(data => {
+                var result = data;
+                var lines = result.replace("\\", "").replace("\\\r","").split('\n');
+                var headers = lines[0].split(',');
+                var jsonResult = [];
+                for (var i = 1; i < lines.length; i++) {
+                    var obj = {};
+                    var currentline = lines[i].split(',');
+                    var valid = true;
+                    for (var j = 0; j < headers.length; j++) {
+                        if (currentline[j] == undefined) 
+                            valid = false;
+                        obj[headers[j]] = currentline[j];
+                    }
+                    if (valid) 
+                    jsonResult.push(obj);
+                }
+                
+                for (let i=0; i<jsonResult.length; i++){
+                    let y = jsonResult[i]["LATITUDE"]
+                    let x = jsonResult[i]["LONGTITUDE"]
+                    let diam = jsonResult[i]["DIAMETER"]
+                    let specie = jsonResult[i]["SPECIES"]
+                    let publictree_marker = publicTreeMarker([y,x], diam).addTo(map)
+                    publictree_marker.bindPopup(" Species: "+ specie)
+                    publictree_markers.push(publictree_marker)
+                }
+            })
+            .catch(error => {
+                console.log('Error:',error);
+            })
+        }
+    }
 
     //---------- add parkland
     let current_parkland_layer = null
@@ -2607,6 +2670,11 @@ function new_archived_incident_cluster_layer() {
         document.querySelector(".samll_scale_green").addEventListener('click', function() {
             console.log("samll_scale_green click")
             buildSmallScaleGreenMap();
+        })
+        //---------- add public tree
+        document.querySelector(".public_tree").addEventListener('click', function() {
+            console.log("public_tree click")
+            buildPublicTreeMap();
         })
         //---------- add parkland
         document.querySelector(".parkland").addEventListener('click', function() {
