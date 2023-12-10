@@ -2546,6 +2546,7 @@ function buildTransitScoreMap() {
 	current_transcore_shapefile = shpfile
 }
 
+let JSON_GAS = null
 let gasLayer = null
 
 /**
@@ -2616,16 +2617,17 @@ const ELEC_CHARGING_CUSTOM_LAYER = new L.geoJson(null, {
 			fillOpacity: feature.properties['Status Code'] == 'E' ? 1 : 0.3,
 		}).bindPopup(() => {
 			return getAltFuelStationPopupContent(feature.properties)
-			;`
+			/* `
 				${getAltFuelStationPopupContent(feature.properties)}
 				<img src="${getGooglePlacesResults(
 					['photos'],
 					`Charging Station at ${feature.properties['Street Address']}`
 				)[0].photos[0].getUrl()}" alt="Image corrupted"/>
-			`
+			` */
 		})
 	},
 })
+
 let elecChargingLayer = null
 
 /**
@@ -2699,55 +2701,60 @@ const FUEL_CODE_TO_TYPE = {
 }
 
 /**
- * @param {JSON} featProps station data associated with a single marker
+ * @param {JSON} props station data associated with a single marker
  * @returns popup content including station access, name, address, etc.
  *
  * @author Kay Kong <lykong@utexas.edu>
  */
-function getAltFuelStationPopupContent(featProps) {
+function getAltFuelStationPopupContent(props) {
 	let popupContent = '<div class="basic-info">'
 
-	if (featProps['Fuel Type Code'] != 'ELEC')
+	if (props['Fuel Type Code'] != 'ELEC')
 		popupContent = `
 			${popupContent}
-			<span>Fuel Type: ${FUEL_CODE_TO_TYPE[featProps['Fuel Type Code']]}</span><br>
+			<span>Fuel Type: ${FUEL_CODE_TO_TYPE[props['Fuel Type Code']]}</span><br>
 		`
 
-	if (featProps['Status Code'] == 'P' && featProps['Expected Date'])
+	if (props['Status Code'] == 'P' && props['Expected Date'])
 		popupContent = `
 			${popupContent}
-			<span>Expected Date: ${featProps['Expected Date']}</span><br>
+			<span>Expected Date: ${props['Expected Date']}</span><br>
 		`
 
 	popupContent = `
 		${popupContent}
-		<span>Name: ${featProps['Station Name']}</span><br>
-		<span>Access: ${featProps['Access Code']}</span><br>
-		<span>Address: ${featProps['Street Address']}, ${featProps['City']}</span><br>
-		<span>ZIP Code: ${featProps['ZIP']}</span>
+		<span>Name: ${props['Station Name']}</span><br>
+		<span>Access: ${props['Access Code']}</span><br>
+		<span>Address: ${props['Street Address']}, ${props['City']}, TX ${props['ZIP']}</span>
 	`
-
-	if (featProps['Station Phone'])
+	/* for (const img of showStreetView(
+		`${props['Street Address']},${props['City']},TX`
+	))
+		console.log(URL.createObjectURL(img)) */
+	if (props['Station Phone'])
 		popupContent = `
 			${popupContent}<br>
-			<span>Phone: ${featProps['Station Phone']}</span>
+			<span>Phone: ${props['Station Phone']}</span>
 		`
-	if (featProps['EV Network'])
+	if (props['EV Network'])
 		popupContent = `
 			${popupContent}<br>
-			<span>Network: ${featProps['EV Network']}</span>
+			<span>Network: ${props['EV Network']}</span>
 		`
 
-	if (featProps['EV Connector Types'])
+	if (props['EV Connector Types'])
 		popupContent = `
 			${popupContent}<br>
-			<span>Connector Type: ${featProps['EV Connector Types']}</span>
+			<span>Connector Type: ${props['EV Connector Types']}</span>
 		`
 
-	return `
-		${popupContent}
+	popupContent = `
+			${popupContent}<br>
+			<button onClick="onStreetViewClick('${props['Street Address']},${props['City']},TX')">Show Street View</button>
 		</div>
 	`
+
+	return popupContent
 
 	/*
 		<div class="stats-info">
@@ -2756,13 +2763,13 @@ function getAltFuelStationPopupContent(featProps) {
 	*/
 }
 
-let service
+/* let service
 
 function initMap() {
 	service = new google.maps.places.PlacesService(
 		document.createElement('div')
 	)
-}
+} */
 
 /* 
 async function initMap() {
@@ -2774,27 +2781,124 @@ async function initMap() {
 initMap() */
 
 // const GOOGLE_PLACES = new google.maps.places.PlacesService(map)
+const GOOGLE_API_KEY = '',
+	STR_FULFILLED = 'fulfilled'
 
-function getGooglePlacesResults(fields, input) {
-	service.findPlaceFromQuery(input, fields)
-	/* return fetch(
-		`https://maps.googleapis.com/maps/api/place/findplacefromtext/json
-			?fields=${fields.join('%2C')}
-			&input=${input}
-			&inputtype=textquery
-			&key=AIzaSyCFUyKIf9tHciEaINV7vZ1iobBsP_cR6Zs
-		`,
-		{ mode: 'no-cors' }
-	)
+async function onStreetViewClick(addr) {
+	console.log(`onStreetViewClick('${addr}')`)
+	const url = `https://maps.googleapis.com/maps/api/streetview?location=${addr
+		.replaceAll(', ', ',')
+		.replaceAll(
+			' ',
+			'+'
+		)}&size=640x640&key=${GOOGLE_API_KEY}&return_error_code=true`
+	const reqSet = new Set()
+	reqSet.add(fetch(url))
+	for (let heading = 0; heading < 360; heading += 90)
+		reqSet.add(fetch(`${url}&heading=${heading}`))
+
+	let dataSource = new Array()
+	for (const res of await Promise.allSettled(reqSet)) {
+		// filter bad images
+		if (res.status == STR_FULFILLED) dataSource.push(res.value.blob())
+	}
+
+	if (dataSource.length == 0) return alert('No Images Found!')
+
+	dataSource = await Promise.all(dataSource)
+	for (let i = 0; i < dataSource.length; ++i) {
+		dataSource[i] = {
+			src: URL.createObjectURL(dataSource[i]),
+			width: 640,
+			height: 640,
+			alt: 'Image corrupted',
+		}
+	}
+
+	new window.PhotoSwipe({
+		dataSource: dataSource,
+		index: 0,
+		showHideAnimationType: 'none',
+	}).init()
+
+	/* const modal = document.querySelector('.street-view-modal'),
+		img = document.querySelector('.street-view-img')
+	let idxStreetView = 0 // store the index of the last street view image
+
+	img.src = tImgArr[idxStreetView]
+	document
+		.getElementById('street-view-prev') // previous button
+		.addEventListener('click', () => {
+			if (--idxStreetView < 0) idxStreetView += tImgArr.length
+			img.src = tImgArr[idxStreetView]
+		})
+	document
+		.getElementById('street-view-next') // next button
+		.addEventListener(
+			'click',
+			() => (img.src = tImgArr[++idxStreetView % tImgArr.length])
+		)
+	document
+		.querySelector('.street-view-close') // close button
+		.addEventListener('click', () => (modal.style.display = 'none'))
+
+	modal.style.display = 'initial'
+	img.style.animation = 'zoom 0.3s linear' */
+
+	// Google Places API
+	/* return fetch('https://places.googleapis.com/v1/places:searchText', {
+		method: 'POST',
+		headers: {
+			'Content-Type': 'application/json',
+			'X-Goog-Api-Key': GOOGLE_API_KEY,
+			'X-Goog-FieldMask':
+				'places.displayName,places.formattedAddress,places.photos',
+		},
+		body: JSON.stringify({
+			textQuery: addr,
+			regionCode: 'US',
+		}),
+	})
 		.then((res) => {
 			if (!res.ok) throw new Error(res.status)
 			return res.json()
 		})
 		.then((json) => {
-			if (json.status != 'OK') throw new Error(json.status)
-			if (json.candidates.length == 0)
-				throw new Error('No Candidates from Google Places API')
-			return json.candidates
+			if (json.error) throw new Error(json.error)
+			if (!json.places || json.places.length == 0)
+				throw new Error('No Matches from Google Places API')
+			return json.places[0]
+		})
+		.catch((err) => console.log(err)) */
+
+	// Google Street View API
+	/* console.log(addr)
+	const url = `https://maps.googleapis.com/maps/api/streetview?location=${addr
+		.replaceAll(', ', ',')
+		.replaceAll(
+			' ',
+			'+'
+		)}&size=640x640&key=${GOOGLE_API_KEY}&return_error_code=true`
+	const reqSet = new Set()
+	reqSet.add(fetch(url))
+	for (const i of Array(4).keys())
+		reqSet.add(fetch(`${url}&heading=${90 * i}`))
+
+	return Promise.allSettled(reqSet)
+		.then((resSet) => {
+			const resArr = new Array()
+			for (const res of resSet) {
+				// filter out empty images
+				if (res.status == STR_FULFILLED) resArr.push(res.value.blob())
+			}
+			return Promise.all(resArr)
+		})
+		.then((blobArr) => {
+			for (const i of blobArr.keys()) {
+				blobArr[i] = URL.createObjectURL(blobArr[i])
+			}
+			console.log(blobArr)
+			return blobArr
 		})
 		.catch((err) => console.log(err)) */
 }

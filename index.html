@@ -221,7 +221,7 @@ Check My Location button code leaflet
 			</div>
 		  </div>
 
-		  		<!-- Modal -->
+		<!-- Modal -->
 		<div class="modal fade" id="creditsModal" role="dialog">
 			<div id="InfoBox1" class="modal-dialog">
 			
@@ -845,11 +845,24 @@ Check My Location button code leaflet
 		rel="stylesheet"
 		href="assets/css/fireMap.css"
 		/>
+		<!-- Street View -->
+		<script type="module">
+			import { default as ps } from './assets/js/photoswipe.esm.min.js'
+			window.PhotoSwipe = ps
+		</script>
+		<link rel="stylesheet" href="./assets/css/photoswipe.css">
 		<script src="./assets/js/fuelStationsMap.js"></script>
+		<!-- <div class="street-view-modal">
+																																															<span class="street-view-close">&times;</span>
+																																															<div class="street-view-content">
+																																															<span id="street-view-prev" class="street-view-nav">&lt;</span>
+																																															<img src="" alt="Corrupted Image" class="street-view-img" />
+																																															<span id="street-view-next" class="street-view-nav">&gt;</span>
+																																														</div> -->
 
 		<!-- Google Places -->
 		<!-- <script async
-					src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCFUyKIf9tHciEaINV7vZ1iobBsP_cR6Zs&libraries=places&callback=initMap">
+					src="https://maps.googleapis.com/maps/api/js?key=&libraries=places&callback=initMap">
 					</script> -->
 		<!-- <script>
 							((g) => {
@@ -887,7 +900,7 @@ Check My Location button code leaflet
 									? console.warn(p + ' only loads once. Ignoring:', g)
 									: (d[l] = (f, ...n) => r.add(f) && u().then(() => d[l](f, ...n)))
 							})({
-								key: 'AIzaSyCFUyKIf9tHciEaINV7vZ1iobBsP_cR6Zs',
+								key: '',
 								libraries: ['places']
 								// Use the 'v' parameter to indicate the version to use (weekly, beta, alpha, etc.).
 								// Add other bootstrap parameters as needed, using camel case.
