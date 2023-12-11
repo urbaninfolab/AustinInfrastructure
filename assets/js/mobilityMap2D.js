@@ -2071,25 +2071,26 @@ function new_archived_incident_cluster_layer() {
             map.addLayer(activated5g_markers)
         }   
     }
-
-    //----------- add signal coverage
-    let current_singalatt_layer = null
-    function buildSignalCoverageATTMap() {
-        selector = ".signal_coverage_att";
-        geojson_path = "data/ATT_austin.geojson";
+    //----------- add signal coverage group
+    let current_singal_layer = null
+    function buildSignalCoverageMap(value) {
         color = "#80c4b7";
+        selector = ".signal_coverage";
+        if (value == 'ATT'){
+            geojson_path = "data/ATT_austin.geojson"
+        }else{
+            geojson_path = "data/verizon_austin.geojson"
+        }
 
-        if (current_singalatt_layer != null){
-            map.removeLayer(current_singalatt_layer)
-            current_singalatt_layer = null
+        if (current_singal_layer != null){
+            map.removeLayer(current_singal_layer)
+            current_singal_layer = null
         }
         if (!document.querySelector(selector).checked){
             return
         }
 
-        // let geojson_path = 'data/ATT_austin.geojson'
         let popupContent = ``;
-
         fetch(geojson_path)
               .then(response => {
                 // Check if the response is ok (status code in the range 200-299)
@@ -2099,8 +2100,8 @@ function new_archived_incident_cluster_layer() {
                 return response.json(); // Parse the response body as JSON
               })
               .then(coverage_json => {
-                console.log('in')
-                console.log(coverage_json);
+                // console.log('in')
+                // console.log(coverage_json);
 
                 let signal_layer = new L.geoJSON(coverage_json, {
                     onEachFeature: function(feature, layer){
@@ -2118,58 +2119,7 @@ function new_archived_incident_cluster_layer() {
                 })
 
                 signal_layer.addTo(map);
-                current_singalatt_layer = signal_layer;
-            })
-            .catch(error => {
-                console.log('Error:', error);
-            });
-
-    }
-
-    let current_singalverizon_layer = null
-    function buildSignalCoverageVerizonMap() {
-        selector = ".signal_coverage_verizon";
-        geojson_path = "data/verizon_austin.geojson";
-        color = "#e3856b ";
-
-        if (current_singalverizon_layer != null){
-            map.removeLayer(current_singalverizon_layer)
-            current_singalverizon_layer = null
-        }
-        if (!document.querySelector(selector).checked){
-            return
-        }
-        let popupContent = ``;
-
-        fetch(geojson_path)
-              .then(response => {
-                // Check if the response is ok (status code in the range 200-299)
-                if (!response.ok) {
-                  throw new Error('Network response was not ok');
-                }
-                return response.json(); // Parse the response body as JSON
-              })
-              .then(coverage_json => {
-                console.log('in')
-                console.log(coverage_json);
-
-                let signal_layer = new L.geoJSON(coverage_json, {
-                    onEachFeature: function(feature, layer){
-                        popupContent = `
-                        <div class="basic-info">
-                            <span>Neighborhood: ${feature.properties["neighname"]}</span><BR>
-                            <span>Land Area: ${feature.properties["shape_area"]} m&sup2 </span><BR>
-                        </div>
-                        `;
-                        layer.bindPopup(popupContent);
-                        layer.options.color = color;
-                        layer.options.weight = 1.0;
-                        layer.options.fillOpacity = 0.65;
-                    }
-                })
-
-                signal_layer.addTo(map);
-                current_singalverizon_layer = signal_layer;
+                current_singal_layer = signal_layer;
             })
             .catch(error => {
                 console.log('Error:', error);
@@ -2292,6 +2242,73 @@ function new_archived_incident_cluster_layer() {
                 console.log('Error:',error);
             })
         }
+    }
+
+    //---------- add public tree group
+    let current_tree_shapefile = null
+    function buildTreeMap(value) {
+        if (current_tree_shapefile != null){
+            map.removeLayer(current_tree_shapefile)
+            current_tree_shapefile = null
+        }
+        if (!document.querySelector(".public_tree_family").checked) {
+            return
+        }
+
+        function getColor(d) {
+            return d == 0 ? '#CFD1CF' :
+                    d < 5 ? '#BD0026' :
+                   d < 10  ? '#E31A1C' :
+                   d < 50  ? '#FC4E2A' :
+                   d < 100  ? '#FD8D3C' :
+                   d < 200   ? '#FEB24C' :
+                   d < 300   ? '#F8DE7E' :
+                   d < 500   ? '#CDCA74' :
+                   d < 700   ? '#A3B56B' :
+                   d < 1000   ? '#78A161' :
+                              '#4D8C57';
+        }
+
+        let shapefile_path = "data/TreeTaxonomy/"+value+".geojson";
+        let popupContent = ``;
+        fetch(shapefile_path)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error ('Network response was not ok')
+            }
+            return response.json();
+        })
+        .then(tree_json => {
+            tree_key = Object.keys(tree_json.features[0].properties)
+            let attr = tree_key.find(v => v.includes(value));
+            let total = 0
+            for (let i=0; i<tree_json.features.length; i++){
+                total += Number(tree_json.features[i].properties[attr])
+            }
+            console.log(total)
+            let tree_layer = new L.geoJSON(tree_json, {
+                onEachFeature: function(feature, layer){
+                    popupContent = `
+                    <div class="basic-info">
+                        <span>Neighborhood: ${feature.properties["neighname"]}</span><BR>
+                    </div>
+                    <div class="stats-info">
+                        <span>Tree Amount: ${feature.properties[attr]} </span><BR>
+                    </div>
+                    `;
+                    layer.bindPopup(popupContent);
+                    let count = Number(feature.properties[attr]);
+                    layer.options.color = getColor(count)
+                    layer.options.weight = 1.0;
+                    layer.options.fillOpacity = 0.65;
+                }
+            })
+            tree_layer.addTo(map);
+            current_tree_shapefile = tree_layer;
+        })
+        .catch(error => {
+            console.log("Error:",error);
+        });
     }
 
     //---------- add parkland
@@ -2655,16 +2672,14 @@ function new_archived_incident_cluster_layer() {
             map.removeLayer(activated5g_markers)
             build5GSitesMap();
         })
-
-        //---------- add signal coverage
-        document.querySelector('.signal_coverage_att').addEventListener('click',function() {
-            console.log('signal_coverage_att click')
-            buildSignalCoverageATTMap();
-        })
-        //---------- add signal coverage
-        document.querySelector('.signal_coverage_verizon').addEventListener('click',function() {
-            console.log('signal_coverage_verizon click')
-            buildSignalCoverageVerizonMap();
+        //----------- add signal coverage dropdown list
+        document.querySelector(".signal_coverage").addEventListener('click', function() {
+            console.log('signal_coverage click');
+            buildSignalCoverageMap(document.querySelector(".signal_coverage_group").value); //by default
+            document.querySelector(".signal_coverage_group").addEventListener('change', function() {
+                console.log(this.value)
+                buildSignalCoverageMap(this.value);
+            })
         })
         //---------- add small scale green
         document.querySelector(".samll_scale_green").addEventListener('click', function() {
@@ -2672,9 +2687,14 @@ function new_archived_incident_cluster_layer() {
             buildSmallScaleGreenMap();
         })
         //---------- add public tree
-        document.querySelector(".public_tree").addEventListener('click', function() {
-            console.log("public_tree click")
-            buildPublicTreeMap();
+        document.querySelector(".public_tree_family").addEventListener('click', function() {
+            console.log('public_tree_family click');
+            console.log(document.querySelector(".public_tree_group").value); //by default
+            buildTreeMap(document.querySelector(".public_tree_group").value)
+            document.querySelector(".public_tree_group").addEventListener('change', function() {
+                console.log(this.value);
+                buildTreeMap(this.value);
+            })
         })
         //---------- add parkland
         document.querySelector(".parkland").addEventListener('click', function() {
