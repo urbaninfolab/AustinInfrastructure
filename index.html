@@ -150,7 +150,7 @@ Check My Location button code leaflet
 
 	</style>
 
-	<body>
+	<body onload="selectFunction()">
 					
 			<div id="map"></div>
 
@@ -479,12 +479,27 @@ Check My Location button code leaflet
 						<b><li>Cell Tower </li></b>
 						<li><input style="margin-left: 15px;" type="checkbox" class="cell_tower"  />  Cell Tower </li>
 						<li><input style="margin-left: 15px;" type="checkbox" class="activated_5g_sites"  />  Activated 5G Site </li>
-						<li><input style="margin-left: 15px;" type="checkbox" class="signal_coverage_att"  />  Signal Coverage (AT&T) </li>
-						<li><input style="margin-left: 15px;" type="checkbox" class="signal_coverage_verizon"  />  Signal Coverage (Verizon) </li>
+						
+						<li><input style="margin-left: 15px;" type="checkbox" class="signal_coverage" id="chkddl" onchange="enableddl(this, 'signal_coverage')">
+						<!-- <label for="signal_coverage"><div style="font-weight:normal !important;">Singal Coverage:</div></label> -->
+						<label style="font-weight:normal !important;">Singal Coverage:</label>
+						<select id="signal_coverage" class="signal_coverage_group" disabled="disabled">
+							<option value="ATT" selected>AT&T</option>
+							<option value="Verizon">Verizon</option>
+						</select>
+						</li>
 
 						<b><li>Green Infrastructure </li></b>
 						<li><input style="margin-left: 15px;" type="checkbox" class="samll_scale_green"  />  Small-scale Green Area </li>
-						<li><input style="margin-left: 15px;" type="checkbox" class="public_tree"  />  Public Tree </li>
+
+						<li><input style="margin-left: 15px;" type="checkbox" class="public_tree_family" id="chkddl_tree" onchange="enableddl(this, 'public_tree')">
+							<!-- <label for="signal_coverage"><div style="font-weight:normal !important;">Singal Coverage:</div></label> -->
+							<label style="font-weight:normal !important;">Public Tree:</label>
+							<select id="public_tree" class="public_tree_group" disabled="disabled">
+								<option value="Sum" selected>All Trees</option>
+							</select>
+						</li>
+
 						<li><input style="margin-left: 15px;" type="checkbox" class="parkland"  />  Parkland </li>
 					</ul>
 				</div>
@@ -771,8 +786,43 @@ Check My Location button code leaflet
 					document.getElementById("date").innerHTML = monthName + " " + day + ", " + year + ", " + strTime + " " + timeZone;
 				}, 60000);
 
+				function enableddl(chkddl, selectid){
+					var ddl = document.getElementById(selectid);
+					ddl.disabled = chkddl.checked ? false : true;
+					if(!ddl.disabled){ 
+						ddl.focus(); 
+					}
+				}
 
-
+				var treeFamily = new Array();
+				treeFamily = ['Adoxaceae (moschatel family)', 'Anacardiaceae (sumac family)',
+							'Apocynaceae (dogbane family)', 'Aquifoliaceae (holly family)',
+							'Arecaceae (palm family)', 'Asparagaceae (asparagus family)',
+							'Betulaceae (birch family)', 'Bignoniaceae (trumpet-creeper family)',
+							'Boraginaceae (borage family)', 'Cornaceae (dogwood family)',
+							'Cupressaceae (cypress family)', 'Ebenaceae (ebony family)',
+							'Ericaceae (heath family)', 'Euphorbiaceae (spurge family)',
+							'Fabaceae (pea family)', 'Fagaceae (beech family)',
+							'Juglandaceae (walnut family)', 'Lamiaceae (mint family)',
+							'Lauraceae (laurel family)', 'Lythraceae (loosestrife family)',
+							'Magnoliaceae (magnolia family)', 'Malvaceae (mallow family)',
+							'Moraceae (fig family)', 'Myricaceae (bayberry family)',
+							'Myrtaceae (myrtle family)', 'Oleaceae (olive family)',
+							'Pinaceae (pine family)', 'Pittosporaceae (pittosporum family)',
+							'Platanaceae (plane tree family)',
+							'Pteridaceae (maidenhair fern family)', 'Rhamnaceae (buckthorn family)',
+							'Rosaceae (rose family)', 'Rutaceae (citrus family)',
+							'Salicaceae (willow family)', 'Sapindaceae (soapberry family)',
+							'Sapotaceae (sapodilla family)', 'Simaroubaceae (quassia family)',
+							'Taxaceae (yew family)', 'Tiliaceae (linden family)',
+							'Ulmaceae (elm family)'];
+				
+				function selectFunction(){  
+					for (let i=0; i<treeFamily.length; i++){
+						var option = "<option value='" + treeFamily[i].split(" ")[0] + "'>" + treeFamily[i].substring(treeFamily[i].indexOf("(")+1, treeFamily[i].lastIndexOf(")")) + "</option>"
+						document.getElementById('public_tree').innerHTML += option;   
+					}
+				}  
 
 			</script>
 
