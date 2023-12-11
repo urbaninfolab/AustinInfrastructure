@@ -2546,21 +2546,71 @@ function buildTransitScoreMap() {
 	current_transcore_shapefile = shpfile
 }
 
-let JSON_GAS = null
+const DATA_DIR =
+	'https://raw.githubusercontent.com/urbaninfolab/AustinInfrastructure/kay/data/'
+
+function stationToLayer(feature, latlng) {
+	return new L.circleMarker(latlng, {
+		radius: 8,
+		fillColor: 'red',
+		color: 'grey',
+		weight: 1,
+		fillOpacity: 1,
+	})
+}
+
 let gasLayer = null
 
 /**
- *
- * @param {Boolean} checked
+ * Creates a layer of gas station markers from geojson string
  * @author Kay Kong <lykong@utexas.edu>
  */
-function onGasClick(checked) {
+const GAS_OPTIONS = {
+	pointToLayer: (feature, latlng) => {
+		return new L.circleMarker(latlng, {
+			radius: 8,
+			fillColor: 'red',
+			color: 'grey',
+			weight: 1,
+			fillOpacity: 1,
+		})
+	},
+	onEachFeature: (feature, layer) => {
+		let popup = `<div class="basic-info">
+			<span>Name: ${feature.properties['Name']}</span><br>
+			<span>Address: ${feature.properties['Address']}</span>
+		`
+
+		if (feature.properties['Phone'])
+			popup = `${popup}<br>
+				<span>Phone: ${feature.properties['Phone']}</span>
+			`
+
+		popup = `${popup}<br>
+				<button onClick="onStreetViewClick(
+					'${feature.properties['Address']}')">
+					Show Street View
+				</button>
+			</div>
+		`
+
+		layer.bindPopup(popup)
+	},
+}
+
+/**
+ * Creates a layer of gas station markers from .geojson file
+ * @param {Boolean} checked Status of checkbox
+ * @author Kay Kong <lykong@utexas.edu>
+ */
+async function onGasClick(checked) {
 	if (!checked && gasLayer) {
 		map.removeLayer(gasLayer)
 		gasLayer = null
 	} else {
-		console.log()
-		gasLayer = null
+		let data = await fetch(`${DATA_DIR}gas.geojson`)
+		data = await data.json()
+		gasLayer = new L.geoJson(data, GAS_OPTIONS).addTo(map)
 	}
 }
 
@@ -2593,67 +2643,56 @@ function buildAltFuelMap(checked) {
 	}
 } */
 
-const CSV_ALT_FUEL = './data/alt_fuel_stations.csv'
+// const CSV_ALT_FUEL = './data/alt_fuel_stations.csv'
 
-// custom layer for filtering and binding popup
-const ELEC_CHARGING_CUSTOM_LAYER = new L.geoJson(null, {
-	filter: (feature, layer) => {
-		/* 
+/**
+ * Creates a layer of electric charging station markers from geojson string
+ * @author Kay Kong <lykong@utexas.edu>
+ */
+const ELEC_OPTIONS = {
+	/* filter: (feature, layer) => {
 		feature.properties['State'] == 'TX' &&
 		feature.properties['City'] == 'Austin' &&
-		 */
 		return feature.properties['Fuel Type Code'] == 'ELEC'
-	},
+	},*/
 	pointToLayer: (feature, latlng) => {
 		return new L.circleMarker(latlng, {
 			radius: 8,
-			fillColor: feature.properties['Station Name'].includes(
-				'Supercharger'
-			)
+			fillColor: feature.properties['Name'].includes('Supercharger')
 				? '#FF6649'
 				: '#2DB262',
 			color: 'grey',
 			weight: 1,
 			fillOpacity: feature.properties['Status Code'] == 'E' ? 1 : 0.3,
-		}).bindPopup(() => {
-			return getAltFuelStationPopupContent(feature.properties)
-			/* `
-				${getAltFuelStationPopupContent(feature.properties)}
-				<img src="${getGooglePlacesResults(
-					['photos'],
-					`Charging Station at ${feature.properties['Street Address']}`
-				)[0].photos[0].getUrl()}" alt="Image corrupted"/>
-			` */
 		})
 	},
-})
+	onEachFeature: (feature, layer) =>
+		layer.bindPopup(getAltFuelPopup(feature.properties)),
+}
 
-let elecChargingLayer = null
+let elecLayer = null
 
 /**
- * Creates a layer of electric charging stations marks from .csv file
+ * Creates a layer of electric charging stations markers from .geojson file
  * @param {Boolean} checked Status of checkbox
  * @author Kay Kong <lykong@utexas.edu>
  */
-function onElecChargingClick(checked) {
-	if (!checked && elecChargingLayer) {
-		map.removeLayer(elecChargingLayer)
-		elecChargingLayer = null
-	} else
-		elecChargingLayer = omnivore
-			.csv(CSV_ALT_FUEL, null, ELEC_CHARGING_CUSTOM_LAYER)
-			.addTo(map)
+async function onElecChargingClick(checked) {
+	if (!checked && elecLayer) {
+		map.removeLayer(elecLayer)
+		elecLayer = null
+	} else {
+		let data = await fetch(`${DATA_DIR}elec.geojson`)
+		data = await data.json()
+		elecLayer = new L.geoJson(data, ELEC_OPTIONS).addTo(map)
+	}
 }
 
-// custom layer for filtering and binding popup
-const OTHER_FUEL_CUSTOM_LAYER = new L.geoJson(null, {
-	filter: (feature, layer) => {
-		/* 
-		feature.properties['State'] == 'TX' &&
-		feature.properties['City'] == 'Austin' &&
-		 */
-		return feature.properties['Fuel Type Code'] != 'ELEC'
-	},
+/**
+ * Creates a layer of other fuel station markers from geojson string
+ * @author Kay Kong <lykong@utexas.edu>
+ */
+const OTHER_OPTIONS = {
 	pointToLayer: (feature, latlng) => {
 		return new L.circleMarker(latlng, {
 			radius: 8,
@@ -2661,24 +2700,25 @@ const OTHER_FUEL_CUSTOM_LAYER = new L.geoJson(null, {
 			color: 'grey',
 			weight: 1,
 			fillOpacity: feature.properties['Status Code'] == 'E' ? 1 : 0.3,
-		}).bindPopup(getAltFuelStationPopupContent(feature.properties))
+		}).bindPopup(getAltFuelPopup(feature.properties))
 	},
-})
-let otherFuelLayer = null
+}
 
+let otherLayer = null
 /**
- * Creates a layer of other fuel stations markers from .csv file
+ * Creates a layer of other fuel stations markers from .geojson file
  * @param {Boolean} checked Status of checkbox
  * @author Kay Kong <lykong@utexas.edu>
  */
-function onOtherFuelClick(checked) {
-	if (!checked && otherFuelLayer) {
-		map.removeLayer(otherFuelLayer)
-		otherFuelLayer = null
-	} else
-		otherFuelLayer = omnivore
-			.csv(CSV_ALT_FUEL, null, OTHER_FUEL_CUSTOM_LAYER)
-			.addTo(map)
+async function onOtherFuelClick(checked) {
+	if (!checked && otherLayer) {
+		map.removeLayer(otherLayer)
+		otherLayer = null
+	} else {
+		let data = await fetch(`${DATA_DIR}other.geojson`)
+		data = await data.json()
+		otherLayer = new L.geoJson(data, OTHER_OPTIONS).addTo(map)
+	}
 }
 
 const FUEL_CODE_TO_COLOR = {
@@ -2706,55 +2746,48 @@ const FUEL_CODE_TO_TYPE = {
  *
  * @author Kay Kong <lykong@utexas.edu>
  */
-function getAltFuelStationPopupContent(props) {
-	let popupContent = '<div class="basic-info">'
+function getAltFuelPopup(props) {
+	let popup = '<div class="basic-info">'
+	console.log(props['Fuel Type Code'])
 
-	if (props['Fuel Type Code'] != 'ELEC')
-		popupContent = `
-			${popupContent}
-			<span>Fuel Type: ${FUEL_CODE_TO_TYPE[props['Fuel Type Code']]}</span><br>
+	if (props['Fuel Type Code'] && props['Fuel Type Code'] != 'ELEC')
+		popup += `${popup}
+			<span>
+				Fuel Type: ${FUEL_CODE_TO_TYPE[props['Fuel Type Code']]}
+			</span><br>
 		`
 
 	if (props['Status Code'] == 'P' && props['Expected Date'])
-		popupContent = `
-			${popupContent}
+		popup = `${popup}
 			<span>Expected Date: ${props['Expected Date']}</span><br>
 		`
 
-	popupContent = `
-		${popupContent}
-		<span>Name: ${props['Station Name']}</span><br>
-		<span>Access: ${props['Access Code']}</span><br>
-		<span>Address: ${props['Street Address']}, ${props['City']}, TX ${props['ZIP']}</span>
+	popup = `${popup}
+		<span>Name: ${props['Name']}</span><br>
+		<span>Access: ${props['Access']}</span><br>
+		<span>Address: ${props['Address']}</span>
 	`
-	/* for (const img of showStreetView(
-		`${props['Street Address']},${props['City']},TX`
-	))
-		console.log(URL.createObjectURL(img)) */
-	if (props['Station Phone'])
-		popupContent = `
-			${popupContent}<br>
-			<span>Phone: ${props['Station Phone']}</span>
+
+	if (props['Phone'])
+		popup = `${popup}<br>
+			<span>Phone: +1 ${props['Phone']}</span>
 		`
 	if (props['EV Network'])
-		popupContent = `
-			${popupContent}<br>
+		popup = `${popup}<br>
 			<span>Network: ${props['EV Network']}</span>
 		`
 
 	if (props['EV Connector Types'])
-		popupContent = `
-			${popupContent}<br>
+		popup = `${popup}<br>
 			<span>Connector Type: ${props['EV Connector Types']}</span>
 		`
 
-	popupContent = `
-			${popupContent}<br>
-			<button onClick="onStreetViewClick('${props['Street Address']},${props['City']},TX')">Show Street View</button>
+	return `${popup}<br>
+			<button onClick="onStreetViewClick('${props['Address']}')">
+				Show Street View
+			</button>
 		</div>
 	`
-
-	return popupContent
 
 	/*
 		<div class="stats-info">
@@ -2781,9 +2814,12 @@ async function initMap() {
 initMap() */
 
 // const GOOGLE_PLACES = new google.maps.places.PlacesService(map)
-const GOOGLE_API_KEY = '',
-	STR_FULFILLED = 'fulfilled'
+const GOOGLE_API_KEY = ''
 
+/**
+ * Create a PhotoSwipe gallery to display street view images from Google
+ * @param {String} addr the address of the location
+ */
 async function onStreetViewClick(addr) {
 	console.log(`onStreetViewClick('${addr}')`)
 	const url = `https://maps.googleapis.com/maps/api/streetview?location=${addr
@@ -2800,7 +2836,7 @@ async function onStreetViewClick(addr) {
 	let dataSource = new Array()
 	for (const res of await Promise.allSettled(reqSet)) {
 		// filter bad images
-		if (res.status == STR_FULFILLED) dataSource.push(res.value.blob())
+		if (res.status == 'fulfilled') dataSource.push(res.value.blob())
 	}
 
 	if (dataSource.length == 0) return alert('No Images Found!')
@@ -3076,7 +3112,7 @@ function buildDropdownMenu(map) {
 	let checkbox = document.querySelector('.gasoline')
 	checkbox.addEventListener('click', () => {
 		console.log('gasoline click')
-		onGasClick(false) //checkbox.clicked)
+		onGasClick(checkbox.clicked) //checkbox.clicked)
 	})
 
 	checkbox = document.querySelector('.electric_charging')
