@@ -2128,7 +2128,6 @@ function new_archived_incident_cluster_layer() {
     }
 
     //------------add small scale green
-
     function smallGreenMarker(latlng, type){ 
         let colorDict = {"Rain Garden":"rgb(20, 112, 29)", "Green Roof":"rgb(48,208,146)", "Vegetated Filter Strip":"rgb(184, 208, 32)",
                         "Rain Barrel / Cistern":"rgb(48,30,184)", "Rain Barrel":"rgb(48,30,184)", "Porous Pavement":"rgb(45, 10, 6)"}
@@ -2180,76 +2179,52 @@ function new_archived_incident_cluster_layer() {
             });
         }
     }
-    //---------- add public tree
-    function publicTreeMarker(latlng, diameter){ 
-        let smallGreenMarkerOptions = {
-            radius: 0.25*diameter,
-            fillColor: "green",
+
+    //---------- add recreation
+    var recreat_markers = []
+
+    function buildRecreationMap(){
+        for (let i=0; i<recreat_markers.length;i++){
+            recreat_markers[i].remove();
+        }
+
+        let recreation = document.querySelector(".recreation").checked
+        let RecreatMarkerOptions = {
+            radius: 6,
+            fillColor: 'blue',
             color: "#000",
             weight: 1,
             opacity: 0.8,
             fillOpacity: 0.6
         }
-        let marker = new L.circleMarker(latlng, smallGreenMarkerOptions)
-        return marker
-    };
-    
-    var publictree_markers = []
-    function buildPublicTreeMap() {
-        for (let i=0; i<publictree_markers.length; i++){
-            publictree_markers[i].remove()
-        }
-        let public_tree = document.querySelector(".public_tree").checked
-
-        treeData = "data/Tree_Inventory.csv"
-        if (public_tree) {
-            fetch(treeData)
+        if (recreation) {
+            fetch("https://data.austintexas.gov/resource/8dff-2vkt.json")
             .then(response => {
                 if (!response.ok) {
-                    throw new Error('Network response was not ok');
+                    throw new Error ('Network response was not ok')
                 }
-                return response.text();
+                return response.json();
             })
-            .then(data => {
-                var result = data;
-                var lines = result.replace("\\", "").replace("\\\r","").split('\n');
-                var headers = lines[0].split(',');
-                var jsonResult = [];
-                for (var i = 1; i < lines.length; i++) {
-                    var obj = {};
-                    var currentline = lines[i].split(',');
-                    var valid = true;
-                    for (var j = 0; j < headers.length; j++) {
-                        if (currentline[j] == undefined) 
-                            valid = false;
-                        obj[headers[j]] = currentline[j];
-                    }
-                    if (valid) 
-                    jsonResult.push(obj);
+            .then(recreat_json => {
+                console.log(recreat_json)
+                for (let i=0; i<recreat_json.length; i++){
+                    let y=recreat_json[i]["location_1"]["latitude"]
+                    let x=recreat_json[i]["location_1"]["longitude"]
+                    var center = recreat_json[i]["recreation_centers"]
+                    let recreat_maker = new L.circleMarker([y,x], RecreatMarkerOptions).addTo(map);
+                    recreat_maker.bindPopup(" Recreation Center: " + center);
+                    recreat_markers.push(recreat_maker);
                 }
-                
-                for (let i=0; i<jsonResult.length; i++){
-                    let y = jsonResult[i]["LATITUDE"]
-                    let x = jsonResult[i]["LONGTITUDE"]
-                    let diam = jsonResult[i]["DIAMETER"]
-                    let specie = jsonResult[i]["SPECIES"]
-                    let publictree_marker = publicTreeMarker([y,x], diam).addTo(map)
-                    publictree_marker.bindPopup(" Species: "+ specie)
-                    publictree_markers.push(publictree_marker)
-                }
-            })
-            .catch(error => {
-                console.log('Error:',error);
             })
         }
     }
 
     //---------- add public tree group
-    let current_tree_shapefile = null
+    let current_tree_layer = null
     function buildTreeMap(value) {
-        if (current_tree_shapefile != null){
-            map.removeLayer(current_tree_shapefile)
-            current_tree_shapefile = null
+        if (current_tree_layer != null){
+            map.removeLayer(current_tree_layer)
+            current_tree_layer = null
         }
         if (!document.querySelector(".public_tree_family").checked) {
             return
@@ -2300,11 +2275,11 @@ function new_archived_incident_cluster_layer() {
                     let count = Number(feature.properties[attr]);
                     layer.options.color = getColor(count)
                     layer.options.weight = 1.0;
-                    layer.options.fillOpacity = 0.65;
+                    layer.options.fillOpacity = 0.5;
                 }
             })
             tree_layer.addTo(map);
-            current_tree_shapefile = tree_layer;
+            current_tree_layer = tree_layer;
         })
         .catch(error => {
             console.log("Error:",error);
@@ -2689,17 +2664,24 @@ function new_archived_incident_cluster_layer() {
         //---------- add public tree
         document.querySelector(".public_tree_family").addEventListener('click', function() {
             console.log('public_tree_family click');
-            console.log(document.querySelector(".public_tree_group").value); //by default
             buildTreeMap(document.querySelector(".public_tree_group").value)
             document.querySelector(".public_tree_group").addEventListener('change', function() {
-                console.log(this.value);
-                buildTreeMap(this.value);
+                if (current_tree_layer!=null){
+                    console.log(this.value);
+                    buildTreeMap(this.value);
+                }
+                
             })
         })
         //---------- add parkland
         document.querySelector(".parkland").addEventListener('click', function() {
             console.log("parkland click")
             buildParklandMap();
+        })
+        //---------- add recreation
+        document.querySelector(".recreation").addEventListener('click', function() {
+            console.log("recreation click")
+            buildRecreationMap();
         })
 
         document.querySelector(".active_incident").addEventListener('click', function () {
