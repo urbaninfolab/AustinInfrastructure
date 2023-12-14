@@ -493,14 +493,14 @@ Check My Location button code leaflet
 						<li><input style="margin-left: 15px;" type="checkbox" class="samll_scale_green"  />  Small-scale Green Area </li>
 
 						<li><input style="margin-left: 15px;" type="checkbox" class="public_tree_family" id="chkddl_tree" onchange="enableddl(this, 'public_tree')">
-							<!-- <label for="signal_coverage"><div style="font-weight:normal !important;">Singal Coverage:</div></label> -->
 							<label style="font-weight:normal !important;">Public Tree:</label>
-							<select id="public_tree" class="public_tree_group" disabled="disabled">
+							<select id="public_tree" class="public_tree_group" disabled="disabled" style="width: 80px;">
 								<option value="Sum" selected>All Trees</option>
 							</select>
 						</li>
 
 						<li><input style="margin-left: 15px;" type="checkbox" class="parkland"  />  Parkland </li>
+						<li><input style="margin-left: 15px;" type="checkbox" class="recreation"  />  Recreation Centers </li>
 					</ul>
 				</div>
 
@@ -823,7 +823,6 @@ Check My Location button code leaflet
 						document.getElementById('public_tree').innerHTML += option;   
 					}
 				}  
-
 			</script>
 
 
