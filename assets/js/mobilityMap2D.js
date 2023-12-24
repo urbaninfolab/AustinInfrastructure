@@ -2087,6 +2087,7 @@ function new_archived_incident_cluster_layer() {
             current_singal_layer = null
         }
         if (!document.querySelector(selector).checked){
+            $('select').prop('selectedIndex',0);
             return
         }
 
@@ -2227,6 +2228,7 @@ function new_archived_incident_cluster_layer() {
             current_tree_layer = null
         }
         if (!document.querySelector(".public_tree_family").checked) {
+            $('select').prop('selectedIndex',0);
             return
         }
 
